@@ -1,0 +1,23 @@
+name: Build PocoMirror test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-launcher:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build launcher
+        shell: cmd
+        run: |
+          call "%ProgramFiles%\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Auxiliary\\Build\\vcvars64.bat"
+          cl /O2 /DUNICODE /D_UNICODE poco-mirror\\launcher.c /link /SUBSYSTEM:WINDOWS comctl32.lib /OUT:PocoMirror.exe
+
+      - name: Upload launcher
+        uses: actions/upload-artifact@v4
+        with:
+          name: PocoMirror-test
+          path: PocoMirror.exe
