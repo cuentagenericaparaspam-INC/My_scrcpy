@@ -7,6 +7,7 @@
 #include <stdlib.h>
 
 #pragma comment(lib, "comctl32.lib")
+#pragma comment(lib, "user32.lib")
 
 #define IDC_DEVICE 1001
 #define IDC_REFRESH 1002
