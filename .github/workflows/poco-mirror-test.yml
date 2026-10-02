@@ -20,7 +20,7 @@ jobs:
           call "%ProgramFiles%\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Auxiliary\\Build\\vcvars64.bat"
           if errorlevel 1 exit /b 1
           where cl
-          cl /O2 /DUNICODE /D_UNICODE poco-mirror\\launcher.c /link /SUBSYSTEM:WINDOWS comctl32.lib /OUT:PocoMirror.exe
+          cl /O2 poco-mirror\\launcher.c /link /SUBSYSTEM:WINDOWS user32.lib comctl32.lib /OUT:PocoMirror.exe
 
       - name: Upload launcher
         uses: actions/upload-artifact@v4
