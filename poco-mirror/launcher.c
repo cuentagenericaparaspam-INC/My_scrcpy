@@ -177,7 +177,7 @@ static void setup_message(HWND hwnd) {
         L"3. Conecta el teléfono por USB.\n"
         L"4. Acepta la clave RSA en el teléfono.\n\n"
         L"En Xiaomi/POCO puede ser necesario activar "
-        L\"Depuración USB (ajustes de seguridad)\n"
+        L"Depuración USB (ajustes de seguridad)\n"
         L"para control por teclado, ratón o gamepad. "
         L"Android no permite que este programa active "
         L"silenciosamente esos permisos protegidos.",
