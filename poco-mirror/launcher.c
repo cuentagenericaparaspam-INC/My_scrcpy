@@ -4,6 +4,7 @@
 #include <commctrl.h>
 #include <stdio.h>
 #include <wchar.h>
+#include <stdlib.h>
 
 #pragma comment(lib, "comctl32.lib")
 
