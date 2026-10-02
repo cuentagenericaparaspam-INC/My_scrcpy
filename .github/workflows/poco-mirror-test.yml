@@ -9,7 +9,7 @@ on:
 
 jobs:
   build-launcher:
-    runs-on: windows-latest
+    runs-on: windows-2022
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -18,6 +18,8 @@ jobs:
         shell: cmd
         run: |
           call "%ProgramFiles%\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Auxiliary\\Build\\vcvars64.bat"
+          if errorlevel 1 exit /b 1
+          where cl
           cl /O2 /DUNICODE /D_UNICODE poco-mirror\\launcher.c /link /SUBSYSTEM:WINDOWS comctl32.lib /OUT:PocoMirror.exe
 
       - name: Upload launcher
