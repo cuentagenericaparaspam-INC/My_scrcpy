@@ -165,13 +165,20 @@ static BOOL extract_embedded_runtime(void) {
         return FALSE;
     }
 
-    ensure_dir(runtime_dir);
     wchar_t parent[MAX_PATH];
     wcsncpy_s(parent, MAX_PATH, runtime_dir, _TRUNCATE);
     wchar_t *slash = wcsrchr(parent, L'\\');
     if (slash) {
         *slash = L'\0';
-        ensure_dir(parent);
+        if (!ensure_dir(parent) && GetFileAttributesW(parent) == INVALID_FILE_ATTRIBUTES) {
+            set_status(L"No se pudo crear la carpeta de datos de PocoMirror.");
+            return FALSE;
+        }
+    }
+
+    if (!ensure_dir(runtime_dir) && GetFileAttributesW(runtime_dir) == INVALID_FILE_ATTRIBUTES) {
+        set_status(L"No se pudo crear la carpeta interna del runtime.");
+        return FALSE;
     }
 
     wchar_t adb_path[MAX_PATH], scrcpy_path[MAX_PATH];
