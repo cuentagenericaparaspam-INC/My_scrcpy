@@ -291,7 +291,7 @@ static BOOL refresh_devices(void) {
     SendMessageW(hDevice, CB_RESETCONTENT, 0, 0);
 
     char *ctx = NULL;
-    char *line = strtok_s(buffer, "\\r\\n", &ctx);
+    char *line = strtok_s(buffer, "\r\n", &ctx);
     while (line) {
         char state[64] = {0};
         if (sscanf_s(line, "%255s %63s", serial, (unsigned)_countof(serial),
@@ -312,7 +312,7 @@ static BOOL refresh_devices(void) {
                 offline++;
             }
         }
-        line = strtok_s(NULL, "\\r\\n", &ctx);
+        line = strtok_s(NULL, "\r\n", &ctx);
     }
 
     if (found > 0) {
