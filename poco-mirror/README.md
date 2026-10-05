@@ -43,3 +43,16 @@ Desde un Developer Command Prompt:
     cl /O2 /DUNICODE /D_UNICODE poco-mirror\\launcher.c /link /SUBSYSTEM:WINDOWS comctl32.lib /OUT:PocoMirror.exe
 
 La base de scrcpy conserva su licencia Apache-2.0.
+
+
+## Code signing policy
+
+PocoMirror es software de código abierto derivado de scrcpy. Para las versiones publicadas se usará una identidad de firma consistente y una canalización de compilación verificable.
+
+Para versiones firmadas mediante SignPath Foundation:
+
+> Free code signing provided by SignPath.io, certificate by SignPath Foundation.
+
+PocoMirror no transferirá información a otros sistemas de red salvo cuando el usuario solicite expresamente esa función o el sistema operativo requiera una conexión necesaria para el funcionamiento solicitado.
+
+La firma no modifica las funciones del programa ni concede permisos adicionales al dispositivo Android.
