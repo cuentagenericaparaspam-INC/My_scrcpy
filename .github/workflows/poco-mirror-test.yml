@@ -1,4 +1,4 @@
-name: Build PocoMirror test
+name: Build PocoMirror single EXE
 
 on:
   push:
@@ -8,56 +8,76 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-launcher:
+  build-single-exe:
     runs-on: windows-2022
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Build launcher
-        shell: cmd
-        run: |
-          call "%ProgramFiles%\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          if errorlevel 1 exit /b 1
-          where cl
-          cl /O2 /utf-8 /DUNICODE /D_UNICODE poco-mirror\launcher.c /link /SUBSYSTEM:WINDOWS user32.lib comctl32.lib /OUT:PocoMirror.exe
 
       - name: Download official scrcpy runtime
         shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
+
           $version = 'v4.1'
           $zipName = 'scrcpy-win64-v4.1.zip'
           $url = "https://github.com/Genymobile/scrcpy/releases/download/$version/$zipName"
           $zipPath = Join-Path $env:RUNNER_TEMP $zipName
-          $extractPath = Join-Path $env:RUNNER_TEMP 'scrcpy-extracted'
-          $stage = Join-Path $env:GITHUB_WORKSPACE 'dist\PocoMirror'
 
           Invoke-WebRequest -Uri $url -OutFile $zipPath
+
           $expected = '5b12172b3264b2889f4583ee64752ce832e29bc8b1089dca81093459697165db'
           $actual = (Get-FileHash $zipPath -Algorithm SHA256).Hash.ToLowerInvariant()
           if ($actual -ne $expected) {
             throw "SHA-256 de scrcpy no coincide. Esperado: $expected. Obtenido: $actual"
           }
 
-          Remove-Item $extractPath -Recurse -Force -ErrorAction SilentlyContinue
-          Remove-Item (Join-Path $env:GITHUB_WORKSPACE 'dist') -Recurse -Force -ErrorAction SilentlyContinue
-          Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force
+          Copy-Item $zipPath (Join-Path $env:GITHUB_WORKSPACE $zipName) -Force
 
-          $scrcpyDir = Get-ChildItem $extractPath -Directory | Select-Object -First 1
-          if (-not $scrcpyDir) { throw 'No se encontró el directorio del paquete scrcpy.' }
+      - name: Create Windows resource file
+        shell: powershell
+        run: |
+          @'
+          #define IDR_RUNTIME_ZIP 3001
+          IDR_RUNTIME_ZIP RCDATA "scrcpy-win64-v4.1.zip"
+          '@ | Set-Content -Path poco-mirror\runtime.rc -Encoding ASCII
 
-          New-Item -ItemType Directory -Path $stage -Force | Out-Null
-          Copy-Item (Join-Path $scrcpyDir.FullName '*') $stage -Recurse -Force
-          Copy-Item (Join-Path $env:GITHUB_WORKSPACE 'PocoMirror.exe') $stage -Force
+      - name: Build embedded resource
+        shell: cmd
+        run: |
+          call "%ProgramFiles%\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          if errorlevel 1 exit /b 1
+          where rc
+          rc /nologo /fo poco-mirror\runtime.res poco-mirror\runtime.rc
+          if errorlevel 1 exit /b 1
 
-          if (-not (Test-Path (Join-Path $stage 'adb.exe'))) { throw 'El paquete final no contiene adb.exe.' }
-          if (-not (Test-Path (Join-Path $stage 'scrcpy.exe'))) { throw 'El paquete final no contiene scrcpy.exe.' }
+      - name: Build PocoMirror single executable
+        shell: cmd
+        run: |
+          call "%ProgramFiles%\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          if errorlevel 1 exit /b 1
+          where cl
+          cl /O2 /utf-8 /DUNICODE /D_UNICODE poco-mirror\launcher.c poco-mirror\runtime.res /link /SUBSYSTEM:WINDOWS user32.lib comctl32.lib /OUT:PocoMirror.exe
+          if errorlevel 1 exit /b 1
+          if not exist PocoMirror.exe exit /b 1
 
-          Compress-Archive -Path (Join-Path $stage '*') -DestinationPath (Join-Path $env:GITHUB_WORKSPACE 'PocoMirror-test.zip') -Force
+      - name: Verify single executable
+        shell: powershell
+        run: |
+          $exe = Get-Item PocoMirror.exe
+          if ($exe.Length -lt 10MB) {
+            throw "PocoMirror.exe es demasiado pequeño: $($exe.Length) bytes"
+          }
 
-      - name: Upload portable package
+          $hash = (Get-FileHash PocoMirror.exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          "PocoMirror.exe SHA-256: $hash" | Out-File -FilePath PocoMirror-SHA256.txt -Encoding UTF8
+          "Tamaño: $($exe.Length) bytes" | Add-Content PocoMirror-SHA256.txt
+
+      - name: Upload single EXE
         uses: actions/upload-artifact@v4
         with:
-          name: PocoMirror-test
-          path: PocoMirror-test.zip
+          name: PocoMirror-single-exe
+          path: |
+            PocoMirror.exe
+            PocoMirror-SHA256.txt
