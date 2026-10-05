@@ -1,0 +1,61 @@
+name: Sign PocoMirror release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  sign:
+    runs-on: windows-2022
+    steps:
+      - name: Download unsigned build
+        uses: actions/download-artifact@v4
+        with:
+          name: PocoMirror-single-exe
+          path: unsigned
+        continue-on-error: false
+
+      - name: Upload unsigned artifact for SignPath
+        id: upload-unsigned-artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PocoMirror-signing-input
+          path: unsigned/PocoMirror.exe
+
+      - name: Submit signing request to SignPath
+        id: submit-signing-request
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          artifact-configuration-slug: ${{ vars.SIGNPATH_ARTIFACT_CONFIGURATION_SLUG }}
+          github-artifact-id: ${{ steps.upload-unsigned-artifact.outputs.artifact-id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-for-completion: true
+          output-artifact-directory: signed
+
+      - name: Verify Authenticode signature
+        shell: powershell
+        run: |
+          $exe = Get-ChildItem signed -Filter *.exe -Recurse | Select-Object -First 1
+          if (-not $exe) { throw "No se encontró el EXE firmado." }
+
+          $sig = Get-AuthenticodeSignature $exe.FullName
+          if ($sig.Status -ne "Valid") {
+            throw "La firma Authenticode no es válida: $($sig.Status) - $($sig.StatusMessage)"
+          }
+
+          "Firmante: $($sig.SignerCertificate.Subject)"
+          "Emisor: $($sig.SignerCertificate.Issuer)"
+          "Estado: $($sig.Status)"
+
+      - name: Upload signed PocoMirror
+        uses: actions/upload-artifact@v4
+        with:
+          name: PocoMirror-signed
+          path: signed/**
