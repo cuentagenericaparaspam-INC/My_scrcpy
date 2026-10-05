@@ -53,11 +53,11 @@ static void get_app_dir(wchar_t *out, size_t out_count) {
     wchar_t exe[MAX_PATH];
     DWORD n = GetModuleFileNameW(NULL, exe, MAX_PATH);
     if (n == 0 || n >= MAX_PATH) {
-        out[0] = L'\\0';
+        out[0] = L'\0';
         return;
     }
-    wchar_t *slash = wcsrchr(exe, L'\\\\');
-    if (slash) *(slash + 1) = L'\\0';
+    wchar_t *slash = wcsrchr(exe, L'\\');
+    if (slash) *(slash + 1) = L'\0';
     wcsncpy_s(out, out_count, exe, _TRUNCATE);
 }
 
@@ -74,13 +74,14 @@ static BOOL get_runtime_dir(wchar_t *out, size_t out_count) {
 static void ps_quote(const wchar_t *in, wchar_t *out, size_t out_count) {
     size_t j = 0;
     if (out_count == 0) return;
-    out[j++] = L'\\'';
+
+    out[j++] = 39;
     for (size_t i = 0; in[i] && j + 2 < out_count; ++i) {
-        if (in[i] == L'\\'') out[j++] = L'\\'';
+        if (in[i] == 39) out[j++] = 39;
         out[j++] = in[i];
     }
-    if (j + 1 < out_count) out[j++] = L'\\'';
-    out[j] = L'\\0';
+    if (j + 1 < out_count) out[j++] = 39;
+    out[j] = 0;
 }
 
 static BOOL run_hidden_capture(const wchar_t *cmd, char *out, DWORD out_chars, DWORD *exit_code) {
@@ -167,9 +168,9 @@ static BOOL extract_embedded_runtime(void) {
     ensure_dir(runtime_dir);
     wchar_t parent[MAX_PATH];
     wcsncpy_s(parent, MAX_PATH, runtime_dir, _TRUNCATE);
-    wchar_t *slash = wcsrchr(parent, L'\\\\');
+    wchar_t *slash = wcsrchr(parent, L'\\');
     if (slash) {
-        *slash = L'\\0';
+        *slash = L'\0';
         ensure_dir(parent);
     }
 
@@ -241,7 +242,7 @@ static BOOL extract_embedded_runtime(void) {
 }
 
 static BOOL ensure_runtime(void) {
-    if (runtime_dir[0] == L'\\0') {
+    if (runtime_dir[0] == L'\0') {
         if (!get_runtime_dir(runtime_dir, MAX_PATH)) return FALSE;
     }
 
