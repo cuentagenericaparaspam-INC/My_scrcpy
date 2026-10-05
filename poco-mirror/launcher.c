@@ -77,15 +77,23 @@ cleanup:
 }
 
 static void refresh_devices(void) {
-    wchar_t exe[MAX_PATH], cmd[1024], buffer[8192];
+    wchar_t exe[MAX_PATH], adb[MAX_PATH], cmd[1024], buffer[8192];
     GetModuleFileNameW(NULL, exe, MAX_PATH);
     wchar_t *slash = wcsrchr(exe, L'\\');
     if (slash) *(slash + 1) = L'\0';
+    swprintf(adb, MAX_PATH, L"%sadb.exe", exe);
+
+    if (GetFileAttributesW(adb) == INVALID_FILE_ATTRIBUTES) {
+        set_status(L"No se encontró adb.exe. El paquete completo debe incluir ADB junto a PocoMirror.exe.");
+        SendMessageW(hDevice, CB_RESETCONTENT, 0, 0);
+        return;
+    }
+
     swprintf(cmd, 1024, L"\"%sadb.exe\" devices", exe);
     SendMessageW(hDevice, CB_RESETCONTENT, 0, 0);
 
     if (!run_hidden_capture(cmd, buffer, 8192)) {
-        set_status(L"No se pudo ejecutar ADB. Coloca adb.exe junto a PocoMirror.exe.");
+        set_status(L"ADB no pudo iniciarse. Verifica que adb.exe esté disponible junto a PocoMirror.exe.");
         return;
     }
 
